@@ -76,6 +76,8 @@ def handle_client(connectionSocket: socket.socket) -> None:
     """
     try:
         message = connectionSocket.recv(BUFFER_SIZE).decode("utf-8").split(DELIMITER, 1)
+        if len(message) != 2:
+            return
         request, number = message[0], message[1]  # Extract request type and number from the message
         response = process(request, number)  # Process the request and generate a response
         connectionSocket.send(response.encode("utf-8"))  # Send the response back to the client

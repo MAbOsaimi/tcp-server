@@ -1,6 +1,6 @@
 import socket, sys, random
 
-HOST = "localhsot"  # Server's IP
+HOST = "127.0.0.1"  # Server's IP
 PORT: int = 50140  # Server's port
 BUFFER_SIZE: int = 1024  # Size of the data to receive from the server
 ERROR_RATE: float = 0.2 # Arbitrary error rate to simulate corruption of data (there is less than ERROR_RATE possibility of corrupting data)
@@ -29,14 +29,13 @@ def display_response(status_code: int, message: str) -> None:
             status_code (int): The HTTP status code returned by the server.
             message (str): The message returned by the server.
         
-        Raises:
-            ValueError: If the status code is not 200 (OK).
+        Notes:
+            If the status code is not 200 (OK), it prints the status code and message.
         """
         if status_code == 200:
             print(message)
         else:
-            print(message)
-            raise ValueError(message)
+            print(str(status_code) + " " + message)
 
 def send_request(request: str, number: str, client_socket: socket.socket) -> None:
     """
@@ -64,39 +63,41 @@ def send_request(request: str, number: str, client_socket: socket.socket) -> Non
     except socket.error as e:
         print(f"Socket error: {e}")
     
-            
-def main() -> None:
-    # Define the socket and its config (It uses IPv4 and TCP)
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-        client_socket.settimeout(60)  # Timeout after 60 seconds of inactivity
-        try:
-            # Initiate connection request to socket with the given host and port numbers
-            client_socket.connect((HOST, PORT))
-            while True:
-                request = input("""B: to convert to binary
+
+while True:
+    try:
+        # Define the socket and its config (It uses IPv4 and TCP)
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.settimeout(5)  # Timeout after 5 seconds of inactivity
+
+        # Initiate connection request to socket with the given host and port numbers
+        client_socket.connect((HOST, PORT))
+        request = input("""B: to convert to binary
 H: to convert to hexadecimal
 Q: to quit the client program
 Enter request: """).upper()
 
-                if request not in ["B", "H", "Q"]:
-                    print("Invalid choice. Please enter B, H, or Q.")
-                    continue
+        if request not in ["B", "H", "Q"]:
+            print("Invalid choice. Please enter B, H, or Q.")
+            continue
 
-                if request == "Q":
-                    sys.exit(0)
+        if request == "Q":
+            break  
 
-                while True:
-                    number = input("Enter number to be converted: ")
-                    if number.isdigit():
-                        break
-                    else:
-                        print("Invalid input. Please enter a number.")
+        while True:
+            number = input("Enter number to be converted: ")
+            if number.isdigit():
                 break
-            send_request(request, number, client_socket)
-        except ConnectionRefusedError:
-            print("Server is down, please try later.")
-        finally:
-            client_socket.close()
+            else:
+                print("Invalid input. Please enter a number.")
+                
+        send_request(request, number, client_socket)
+    except ConnectionRefusedError:
+        print("Server is down, please try later.")
+        sys.exit(1)
+    except socket.error as e:
+        print(f"Socket error: {e}")
+        sys.exit(1)
+    finally:
+        client_socket.close()
 
-if __name__ == "__main__":
-    main()
